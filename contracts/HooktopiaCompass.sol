@@ -30,10 +30,8 @@ contract HooktopiaCompass is ERC721, ERC721Enumerable, AccessControl {
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     uint256 public constant maxSupply = 6666;
-    uint256 public constant reservedGold = 66;
-    uint256 public constant reservedSilver = 600;
-    uint256 public constant maxGoldSupply = 1045;  //1111 - 66
-    uint256 public constant maxSilverSupply = maxSupply - maxGoldSupply - reservedGold - reservedSilver; // 6666 - 1045 - 66 - 600 = 4955
+    uint256 public constant maxGoldSupply = 1111;
+    uint256 public constant maxSilverSupply = maxSupply - maxGoldSupply; // 6666 - 1111 = 5555
     uint256 public constant MINTS_PER_WALLET = 3;
     address public constant HOOKTokenAddress = 0xa260E12d2B924cb899AE80BB58123ac3fEE1E2F0;
 
@@ -43,12 +41,12 @@ contract HooktopiaCompass is ERC721, ERC721Enumerable, AccessControl {
     uint256 public reservedSilverSupply;
 
     // Price for the Gold allowlist mint and public mint
-    uint256 public allowlistPriceGold = 5 ether;
-    uint256 public publicPriceGold = 10 ether;
+    uint256 public allowlistPriceGold = 0 ether;
+    uint256 public publicPriceGold = 0 ether;
 
     // Price for the Silver allowlist mint and public mint
-    uint256 public allowlistPriceSilver = 1 ether;
-    uint256 public publicPriceSilver = 2 ether;
+    uint256 public allowlistPriceSilver = 0 ether;
+    uint256 public publicPriceSilver = 0 ether;
 
     SaleStates public saleState = SaleStates.NotStarted;
 
@@ -73,12 +71,16 @@ contract HooktopiaCompass is ERC721, ERC721Enumerable, AccessControl {
         _grantRole(MINTER_ROLE, msg.sender);
         mintSigner = _signer;
 
-        for (uint64 i = 0; i < maxGoldSupply + reservedGold; i++) { // Gold from 0 to 1110
+        for (uint64 i = 0; i < maxGoldSupply; i++) { // Gold from 0 to 1110
             remainingGoldCompass.push(i);
         }
-        for (uint64 i = uint64(maxGoldSupply + reservedGold); i < maxSupply; i++) { // Silver from 1111 to 6665
+        for (uint64 i = uint64(maxGoldSupply); i < maxSupply; i++) { // Silver from 1111 to 6665
             remainingSilverCompass.push(i);
         }
+    }
+
+    function contractURI() public pure returns (string memory) {
+        return "https://ipfs.hooked.io/contract-metadata/hooktopia-compass.json";
     }
 
     function allowlistMint(uint8 numberOfTokens, uint8 tokenType, bytes calldata signature) external {
@@ -129,13 +131,13 @@ contract HooktopiaCompass is ERC721, ERC721Enumerable, AccessControl {
         require(tokenType == 0 || tokenType == 1, "Invalid token type");
 
         if (tokenType == 0) { // Gold
-            require(reservedGoldSupply + numberOfTokens <= reservedGold, "Exceeds Gold supply");
+            require(reservedGoldSupply + numberOfTokens <= maxGoldSupply, "Exceeds Gold supply");
             for (uint256 i = 0; i < numberOfTokens; i++) {
                 _mintByType(to, tokenType);
                 reservedGoldSupply++;
             }
         } else { // Silver
-            require(reservedSilverSupply + numberOfTokens <= reservedSilver, "Exceeds Silver supply");
+            require(reservedSilverSupply + numberOfTokens <= maxSilverSupply, "Exceeds Silver supply");
             for (uint256 i = 0; i < numberOfTokens; i++) {
                 _mintByType(to, tokenType);
                 reservedSilverSupply++;
@@ -245,7 +247,7 @@ contract HooktopiaCompass is ERC721, ERC721Enumerable, AccessControl {
         require(_exists(tokenId), "Token does not exist");
         
         string memory tokenType = tokenTypes[tokenId] == 0 ? "Gold" : "Silver";
-        string memory imageURL = tokenTypes[tokenId] == 0 ? "ipfs://QmWzWvZ9ksXC5d1tKcUvi86AixgmVM96QrXQcfCDQMXbAY" : "ipfs://Qmf4ouJ2iJQBQSf7uCWmLx99gJdZtBfzJ6m2BjdzekmRJg";
+        string memory imageURL = tokenTypes[tokenId] == 0 ? "https://ipfs.hooked.io/compass/QmWzWvZ9ksXC5d1tKcUvi86AixgmVM96QrXQcfCDQMXbAY.png" : "https://ipfs.hooked.io/compass/Qmf4ouJ2iJQBQSf7uCWmLx99gJdZtBfzJ6m2BjdzekmRJg.png";
         string memory description = tokenTypes[tokenId] == 0 ? "A compass made of gold can indicate the location of strong miracles which in hooktopia.According to the legend, miracles can bring powerful blessing to nourish your land" : "A compass made of silver can indicate the location of ordinary miracles which in hooktopia.According to the legend, miracles can bring powerful blessing to nourish your land";
         string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "Hooktopia Compass #',Strings.toString(tokenId),'", "description": "',description,'", "image": "',imageURL,'", "attributes": [{"trait_type":"Trait","value":"Compass"},{"trait_type": "Material", "value": "', tokenType, '"}]}'))));
         string memory output = string(abi.encodePacked('data:application/json;base64,', json));

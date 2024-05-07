@@ -14,6 +14,10 @@ contract Hooktopia is ERC721, ERC721Enumerable, Ownable {
         compassAddress = _compass;
     }
 
+    function contractURI() public pure returns (string memory) {
+        return "https://ipfs.hooked.io/contract-metadata/hooktopia.json";
+    }
+
     function redeem(address to, uint256 tokenId) external {
         require(msg.sender == compassAddress, "Hooktopia: Only Compass can redeem");
         _safeMint(to, tokenId);
